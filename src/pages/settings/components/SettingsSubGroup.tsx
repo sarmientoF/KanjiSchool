@@ -9,6 +9,7 @@ import { SettingName } from "@utils/settings";
 import { SettingBoolean } from "./SettingBoolean.tsx";
 import { SettingInteger } from "./SettingInteger.tsx";
 import { DropdownOptions, SettingDropdown } from "./SettingDropdown.tsx";
+import { SettingCustomToken } from "./SettingCustomToken.tsx";
 import { menuItemClass } from "./settingsStyles.ts";
 
 export type MenuItem = Required<MenuProps>["items"][number];
@@ -66,6 +67,14 @@ export function dropdownSetting<T extends string>(
       options={options}
       onChanged={onChanged}
     />
+  };
+}
+
+export function customTokenSetting(): MenuItem {
+  return {
+    key: "customToken",
+    className: menuItemClass,
+    label: <SettingCustomToken />
   };
 }
 

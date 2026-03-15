@@ -6,6 +6,7 @@ import { store } from "@store";
 import { useAppSelector } from "@store";
 import { shallowEqual } from "react-redux";
 import { setApiKey, setUser } from "@store/slices/authSlice.ts";
+import { setSyncingSubjects, setSyncingSubjectsProgress } from "@store/slices/syncSlice.ts";
 
 import * as api from "@api";
 import { ApiUser } from "@api";
@@ -29,18 +30,77 @@ export const useUserMaxLevel = (): number =>
   useAppSelector(s => s.auth.user?.data.subscription.max_level_granted) || 3;
 
 /** Attempt to authenticate with the API using the specified API key. If it is
- * successful, save the API key. */
-export async function attemptLogIn(apiKey: string): Promise<void> {
-  debug("attempting first-time login");
+ * successful, save the API key. Optionally migrate to the custom backend. */
+export async function attemptLogIn(apiKey: string, { migrate = false }: { migrate?: boolean } = {}): Promise<void> {
+  debug("attempting first-time login (migrate=%s)", migrate);
 
   const user = await api.get<ApiUser>("/user", { apiKey });
   if (!user || !user?.data.id) throw new Error("Invalid login");
 
   debug("got user %s (lvl %d)", user.data.username, user.data.level);
 
+  if (migrate) {
+    // Show SyncPage with "Migrating..." while server-side migration runs.
+    // Set syncingSubjects so syncSubjects() won't run concurrently.
+    store.dispatch(setSyncingSubjects(true));
+    store.dispatch(setSyncingSubjectsProgress({ count: 0, total: 0, extra: "Migrating..." }));
+    lsSetString("apiKey", apiKey);
+    lsSetObject("user", user);
+    store.dispatch(setApiKey(apiKey));
+    store.dispatch(setUser(user));
+
+    const apiUrl = (localStorage.getItem("kanjischool-apiUrl") || import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+    try {
+      debug("attempting migration to %s", apiUrl);
+      const migrateRes = await fetch(`${apiUrl}/v2/migrate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wanikani_api_key: apiKey }),
+      });
+      const migrateData = await migrateRes.json();
+      if (migrateData?.token) {
+        debug("migration successful, storing custom token");
+        localStorage.setItem("kanjischool-customApiToken", migrateData.token);
+      } else {
+        debug("migration response missing token field");
+      }
+    } catch (err) {
+      console.error("migration request failed:", err);
+    }
+
+    // Migration done — trigger normal sync from custom backend
+    store.dispatch(setSyncingSubjects(false));
+    api.syncSubjects();
+    return;
+  }
+
   lsSetString("apiKey", apiKey);
   lsSetObject("user", user);
   store.dispatch(setApiKey(apiKey));
+  store.dispatch(setUser(user));
+}
+
+/** Log in using an existing custom backend token (already migrated users). */
+export async function attemptLogInWithToken(token: string): Promise<void> {
+  debug("attempting login with custom token");
+
+  // Set token first so requests route to the custom backend
+  localStorage.setItem("kanjischool-customApiToken", token);
+
+  let user: ApiUser;
+  try {
+    user = await api.get<ApiUser>("/user");
+    if (!user?.data.id) throw new Error("Invalid token");
+  } catch (err) {
+    localStorage.removeItem("kanjischool-customApiToken");
+    throw err;
+  }
+
+  debug("got user %s (lvl %d)", user.data.username, user.data.level);
+
+  lsSetString("apiKey", token);
+  lsSetObject("user", user);
+  store.dispatch(setApiKey(token));
   store.dispatch(setUser(user));
 }
 
@@ -55,6 +115,7 @@ export async function logOut(): Promise<void> {
   // Delete the user data from local storage
   debug("deleting user data");
   lsSetString("apiKey", null);
+  lsSetString("customApiToken", null);
   lsSetObject("user", null);
 
   // Clear the user-relevant stores from the database

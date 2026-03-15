@@ -143,9 +143,15 @@ export async function loadAssignments(): Promise<void> {
 
   // User level and subjects are required for loading assignments.
   const userLevel = store.getState().auth.user?.data.level;
-  if (!userLevel) throw new Error("No user level!");
+  if (!userLevel) {
+    debug("no user level available, skipping assignment load");
+    return;
+  }
   const { subjects } = store.getState().subjects;
-  if (!subjects) throw new Error("No subjects!");
+  if (!subjects) {
+    debug("no subjects available, skipping assignment load");
+    return;
+  }
 
   const assignments = await db.assignments.toArray();
   const assignmentMap: StoredAssignmentMap = {};

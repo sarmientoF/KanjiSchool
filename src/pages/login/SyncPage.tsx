@@ -40,10 +40,12 @@ export function SyncPage(): JSX.Element {
 
         {/* Progress bar */}
         {progress
-          ? <>
-            Subjects (<b>{progress.count}</b>/<b>{progress.total}</b>)
-            <Progress percent={percent} />
-          </>
+          ? progress.extra
+            ? <i>{progress.extra}</i>
+            : <>
+              Subjects (<b>{progress.count}</b>/<b>{progress.total}</b>)
+              <Progress percent={percent} />
+            </>
           : <i>Starting...</i>}
       </SimpleCard>
     </PageLayout>

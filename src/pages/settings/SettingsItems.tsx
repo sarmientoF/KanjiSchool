@@ -6,7 +6,7 @@ import { MenuProps } from "antd";
 import { HomeOutlined, BugOutlined, SettingOutlined, SearchOutlined } from "@ant-design/icons";
 import { AccessibilityFilled } from "@comp/icons/AccessibilityFilled";
 
-import { settingsSubGroup, booleanSetting, integerSetting, dropdownSetting, settingsGroup } from "./components/SettingsSubGroup.tsx";
+import { settingsSubGroup, booleanSetting, integerSetting, dropdownSetting, settingsGroup, customTokenSetting } from "./components/SettingsSubGroup.tsx";
 import { getLessonSettingsGroup, getReviewSettingsGroup, getSelfStudySettingsGroup } from "./SettingsSessions";
 import { getFontSettingsGroup } from "./fonts/SettingsFonts.tsx";
 
@@ -174,6 +174,11 @@ export const menuItems: NonNullable<MenuProps["items"]> = [
 
   // Advanced settings
   settingsGroup("Advanced settings", [
+    // API settings
+    settingsSubGroup("API settings", <SettingOutlined />, [
+      customTokenSetting()
+    ]),
+
     // Debug settings
     settingsSubGroup("Debug settings", <BugOutlined />, [
       booleanSetting("sessionInfoDebug", "Show debug info during a session"),

@@ -41,6 +41,7 @@ export function calculateNextReviews(
 
     // If on a free subscription, remove subjects outside of max level
     const subject = subjects[assignment.data.subject_id];
+    if (!subject) continue;
     if (subject.data.level > maxLevel) continue;
 
     const srsStage = srs_stage;

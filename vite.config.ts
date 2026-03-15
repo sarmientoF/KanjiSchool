@@ -32,7 +32,10 @@ function parseTsAliases() {
 }
 
 // Inject the git version into the build
-const gitVersion = execSync("git describe --always --tags").toString().trim();
+const gitVersion = (() => {
+  try { return execSync("git describe --always --tags").toString().trim(); }
+  catch { return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "unknown"; }
+})();
 process.env.VITE_GIT_VERSION = gitVersion;
 
 const HTTPS_KEY = process.env.HTTPS_KEY;

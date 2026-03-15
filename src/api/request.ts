@@ -29,7 +29,11 @@ interface RequestConfig extends RequestInit {
   timeout?: number;
 }
 
-const API_BASE = "https://api.wanikani.com/v2";
+const DEFAULT_API_BASE = "https://api.wanikani.com/v2";
+const CONFIGURED_API_URL: string | undefined = import.meta.env.VITE_API_URL;
+function getApiBase(): string {
+  return localStorage.getItem("kanjischool-apiUrl") || CONFIGURED_API_URL || DEFAULT_API_BASE;
+}
 const MAX_ATTEMPTS = 10;
 const DEFAULT_TIMEOUT = 30000;
 
@@ -37,8 +41,9 @@ const requestQueue = new PQueue({ concurrency: 6 });
 let rateLimitResetTime: Dayjs | null = null;
 let rateLimitResetTimeout: NodeJS.Timeout | number | null = null;
 
-export function getRequestUrl(url: string): string {
-  const urlO = new URL(url, API_BASE);
+export function getRequestUrl(url: string, useCustom = true): string {
+  const apiBase = useCustom ? getApiBase() : DEFAULT_API_BASE;
+  const urlO = new URL(url, apiBase);
 
   // Prepend /v2/ to the path if necessary
   if (!urlO.pathname.startsWith("/v2")) {
@@ -60,8 +65,11 @@ async function underlyingRequest<T>(
     throw new Error(`Could not complete request after ${attempt} attempts`);
   }
 
-  const apiKey = options?.apiKey ?? store.getState().auth.apiKey;
-  const url = getRequestUrl(endpoint);
+  const customToken = localStorage.getItem("kanjischool-customApiToken");
+  const apiKey = customToken || options?.apiKey || store.getState().auth.apiKey;
+  // Only route through the custom backend once a custom token exists.
+  // During initial login (no customToken yet) always hit WaniKani directly.
+  const url = getRequestUrl(endpoint, !!customToken);
   debug("api request for %s (%s)%s", url, endpoint, attempt > 1 ? ` (attempt ${attempt})` : "");
 
   const reqStart = performance.now();

@@ -2,7 +2,7 @@
 // This file is part of KanjiSchool under AGPL-3.0.
 // Full details: https://github.com/Lemmmy/KanjiSchool/blob/master/LICENSE
 
-import { Layout } from "antd";
+import { Layout, Tag } from "antd";
 import useBreakpoint from "antd/es/grid/hooks/useBreakpoint";
 import classNames from "classnames";
 
@@ -38,6 +38,7 @@ export const dropdownOverlayClass = classNames(
 export function AppHeader(): JSX.Element | null {
   // Hide certain features on mobile
   const { sm } = useBreakpoint();
+  const isMigrated = !!localStorage.getItem("kanjischool-customApiToken");
 
   if (!api.useIsLoggedIn()) return null;
 
@@ -50,8 +51,9 @@ export function AppHeader(): JSX.Element | null {
         <span className="text-[22.5px] text-white light:text-black">
           KanjiSchool
         </span>
-        <span className="text-[11px] block h-auto leading-none relative left-0 bottom-[2em] text-desc">
+        <span className="text-[11px] flex items-center gap-xs h-auto leading-none relative left-0 bottom-[2em] text-desc">
           {gitVersion}
+          {isMigrated && <Tag color="green" className="!text-[10px] !px-1 !py-0 !leading-none !m-0">custom</Tag>}
         </span>
       </div>
     </ConditionalLink>
