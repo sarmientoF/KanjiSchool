@@ -84,7 +84,7 @@ export const SubjectCharacters = React.memo(({
     }
   );
 
-  if (characterImages) {
+  if (characterImages?.length) {
     // Character image for radicals
     return <CharacterImage
       className={classNames(classes, imageClassName)}

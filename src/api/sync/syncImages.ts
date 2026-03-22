@@ -71,7 +71,7 @@ export async function syncImages(): Promise<void> {
       try {
         const res = await fetch(url);
         const data = await res.text();
-        db.characterImages.put({
+        await db.characterImages.put({
           id: Number(subjectId),
           cachedUrl: url,
           svg: data
